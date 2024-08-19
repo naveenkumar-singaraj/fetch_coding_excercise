@@ -1,5 +1,9 @@
 import { expect, Locator, Page } from "@playwright/test";
 
+/**
+ * Page object class for Fetch: SDET Challenge webpage
+ * Contains getters, api/methods interacting locators in SDET challenge web page
+ */
 export class ChallengePage {
     private page: Page
     constructor(page: Page) {
@@ -72,12 +76,12 @@ export class ChallengePage {
     }
 
     /**
-     * Weight gold bars by following series of steps listed below
+     * Weigh gold bars by following series of steps listed below
      * Steps:
      * 1. Reset weight to clear bowl values
      * 2. Enter gold bar numbers in both left and right bowls
      * 3. Click weigh button and wait for weighing results to populate
-     * 4. Read the latest weighing result and return 0 or 1 or -1
+     * 4. Read the latest weighing result and return 0 or 1 or -1 based on result
      * @param {number[]} group1
      * @param {number[]} group2
      * @returns 0 or 1 or -1
@@ -126,7 +130,7 @@ export class ChallengePage {
      * Steps:
      * 1. Divide gold bars into 3 groups with 3 bars each
      * 2. First weighing: Compare group1 and group2 weights
-     * 3. Find fakeGroup based on first wighing results 
+     * 3. Find fakeGroup based on first weighing results 
      * 4. Second weighing: compare two bars from the fake group
      * 5. Find fake bar based on seond weighing results
      * @param {number[]} goldBars
@@ -141,7 +145,7 @@ export class ChallengePage {
         // First weighing: Compare group1 and group2 weights
         const result1 = await this.weigh(group1, group2);
 
-        // Find fakeGroup based on first wighing results
+        // Find fakeGroup based on first weighing results
         let fakeGroup: number[];
         if (result1 === 0) {
             // Group1 and group2 are equal, the fake bar is in group3
