@@ -22,7 +22,7 @@ export class ChallengePage {
 
     // Returns Result (=) button locator 
     get resultBtn(): Locator {
-        return this.page.locator('.result > button')
+        return this.page.locator('.result > button');
     }
 
     // Returns list of weighings locator
@@ -35,36 +35,33 @@ export class ChallengePage {
         return this.page.locator('.game-info li').last();
     }
 
+    // Returns locator of left bowl cells
+    get leftBowlCells(): Locator {
+        return this.page.locator('[data-side="left"]');
+    }
+
+    // Returns locator of right bowl cells
+    get rightBowlCells(): Locator {
+        return this.page.locator('[data-side="right"]');
+    }
+
     /**
      * Navigate to Fetch SDET Challenge website and verify page title is loaded
      */
-    public async navigateToChallenge() {
+    public async navigateToChallengeWebPage() {
+        // Navigate to base URL mentioned in Config file
         await this.page.goto('');
         // Expect a title
         await expect(this.page).toHaveTitle('React App');
     }
 
     /**
-     * Return left bowl cell based on the index
-     * @param {number} index
-     */
-    public leftBowlCell(index: number): Locator {
-        return this.page.locator(`#left_${index}`);
-    }
-
-    /**
-     * Return right bowl cell based on the index
-     * @param {number} index
-     */
-    public rightBowlCell(index: number): Locator {
-        return this.page.locator(`#right_${index}`);
-    }
-
-    /**
      * Reset weighing by clicking Reset button
      */
     public async resetWeigh() {
-        await this.page.getByText('Reset').click()
+        await this.page.getByText('Reset').click();
+        // Verify reset is applied, Result icon changes ? from =
+        await expect(this.page.locator('.result #reset')).toHaveText('?');
     }
 
     /**
@@ -72,7 +69,7 @@ export class ChallengePage {
      * @param {number} index
      */
     public async goldBar(index: number) {
-        return this.page.locator(`#coin_${index}`)
+        return this.page.locator(`#coin_${index}`);
     }
 
     /**
@@ -90,15 +87,9 @@ export class ChallengePage {
         // Reset weighings and clear bowl values
         await this.resetWeigh();
 
-        // Enter gold bar numbers from group1 in left bowls
-        for (const i of group1) {
-            await this.leftBowlCell(i).fill(`${i}`);
-        }
-
-        // Enter gold bar numbers from group2 in right bowls
-        for (const j of group2) {
-            await this.rightBowlCell(j).fill(`${j}`);
-        }
+        // Enter gold bar numbers from group1 in left bowl & group 2 in right bowl
+        await this.fillBowls(group1, this.leftBowlCells);
+        await this.fillBowls(group2, this.rightBowlCells);
 
         // Read weight results count prior to clicking weigh button
         const prevWeighingResultsCount = await this.weighings.count();
@@ -109,19 +100,33 @@ export class ChallengePage {
 
         // Read the latest weighing result
         let resultDetails = await this.latestWeighing.innerText();
-        // Return 0 if both bowl weights are equal
+        return this.parseWeighingResult(resultDetails);
+    }
+
+    /**
+     * Fill bowl cell values with numbers
+     * @param {number[]} group numbers to be filled
+     * @param {Locator} bowlCell locator of the left/right bowl cell
+     */
+    private async fillBowls(group: number[], bowlCell: Locator) {
+        for (const i of group) {
+            await bowlCell.nth(i).fill(`${i}`);
+        }
+    }
+    /**
+     * Parse weight results based on comparaision indicator i.e., =,<,>
+     * @param {string} resultDetails weighing result string
+     * @returns {0 | 1 | -1}
+     */
+    private parseWeighingResult(resultDetails: string): 0 | 1 | -1 {
         if (resultDetails.includes('=')) {
             return 0;
-        }
-        // Return -1 if left bowl is less than right bow;
-        else if (resultDetails.includes('<')) {
+        } else if (resultDetails.includes('<')) {
             return -1;
-        }
-        // Return 1 if left bowl is greater than right bow;
-        else if (resultDetails.includes('>')) {
+        } else if (resultDetails.includes('>')) {
             return 1;
         } else {
-            throw Error(`Invalid weighing result: ${resultDetails}`)
+            throw new Error(`Invalid weighing result: ${resultDetails}`);
         }
     }
 
@@ -133,14 +138,14 @@ export class ChallengePage {
      * 3. Find fakeGroup based on first weighing results 
      * 4. Second weighing: compare two bars from the fake group
      * 5. Find fake bar based on seond weighing results
-     * @param {number[]} goldBars
+     * @param {number[]} goldBarIndexes
      * @returns {Promise<number>} fake gold bar number
      */
-    public async findFakeGroup(goldBars: number[]): Promise<number> {
+    public async findFakeGoldBar(goldBarIndexes: number[]): Promise<number> {
         // Divide gold bars into 3 groups with 3 bars each
-        const group1 = goldBars.slice(0, 3);
-        const group2 = goldBars.slice(3, 6);
-        const group3 = goldBars.slice(6, 9);
+        const group1 = goldBarIndexes.slice(0, 3);
+        const group2 = goldBarIndexes.slice(3, 6);
+        const group3 = goldBarIndexes.slice(6, 9);
 
         // First weighing: Compare group1 and group2 weights
         const result1 = await this.weigh(group1, group2);
@@ -164,13 +169,13 @@ export class ChallengePage {
         // Find fake bar based on seond weighing results
         if (result2 === 0) {
             // The third bar is the fake one
-            return goldBars.indexOf(fakeGroup[2]);
+            return goldBarIndexes.indexOf(fakeGroup[2]);
         } else if (result2 === -1) {
             // The first bar is the fake one
-            return goldBars.indexOf(fakeGroup[0]);
+            return goldBarIndexes.indexOf(fakeGroup[0]);
         } else {
             // The second bar is the fake one
-            return goldBars.indexOf(fakeGroup[1]);
+            return goldBarIndexes.indexOf(fakeGroup[1]);
         }
     }
 
